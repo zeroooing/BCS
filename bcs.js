@@ -82,10 +82,7 @@ BCS.prototype.authenticate = function(opt) {
         $request->set_write_file ( $opt ['fileWriteTo'] );
     }
     
-    // Set content to Http-Body
-    if (isset ( $opt ['content'] )) {
-        $request->set_body ( $opt ['content'] );
-    }
+
     */
     var req = http.request(options, function(res) {
         console.log('STATUS: ' + res.statusCode);
@@ -108,6 +105,8 @@ BCS.prototype.authenticate = function(opt) {
       console.log('problem with request: ' + e.message);
     });
     req.setHeader('Content-Type', 'application/x-www-form-urlencoded');
+
+
 // ###################################################################################### / 
     if (opt['fileUpload']) {
         // Upload file
@@ -162,6 +161,13 @@ BCS.prototype.authenticate = function(opt) {
         // var filestream = fs.createReadStream(opt['fileUpload'], {'start' : opt['seekTo'], 'end' : (length - opt['seekTo']) });
         // filestream.pipe(req);
     } else {
+
+        // Set content to Http-Body
+        if (opt['content']) {
+            var buf = new Buffer(opt['content']);
+            req.setHeader('Content-Length', buf.length);
+            req.write(opt['content']);
+        }
         req.end();
     }    
 };
@@ -392,6 +398,44 @@ BCS.prototype.create_object = function(bucket, object, file, opt) {
     */
     var response = this.authenticate(opt);
     // $this->log ( $response->isOK () ? "Create object[$object] file[$file] success!" : "Create object[$object] file[$file] failed! Response: [" . $response->body . "] Logid[" . $response->header ["x-bs-request-id"] . "]", $opt );
+    // return $response;
+};
+/**
+ * 上传文件
+ * @param string $bucket (Required) 
+ * @param string $object (Required) 
+ * @param string $file (Required); 需要上传的文件的文件路径
+ * @param array $opt (Optional) 
+ * filename - Optional; 指定文件名
+ * acl - Optional ; 上传文件的acl，只能使用acl_type
+ * @return BCS_ResponseCore
+ */
+BCS.prototype.create_object_by_content = function(bucket, object, content, opt) {
+    var opt = opt || {}; 
+    opt['ak'] = this.ak;
+    opt['sk'] = this.sk;
+    opt['bucket'] = bucket;
+    opt['object'] = object;
+    opt['method'] = 'PUT';
+
+    if (content && typeof content === 'string') {
+        opt['content'] = content;
+    } else {
+        throw( "Invalid object content, please check.", - 1 );
+    }
+    if (opt['acl']) {
+        if (ACL_TYPES.indexOf(acl) === -1) {
+            // throw new BCS_Exception ( "Invalid acl_type[" . $opt ['acl_type'] . "], please check!", - 1 );
+            console.log( "Invalid acl_type[" + acl + "], please check!", - 1 );
+        }
+        this.set_header_into_opt("x-bs-acl", acl, opt);
+        //TODO unset ( $opt ['acl'] );
+    }
+    if (opt['filename']) {
+        this.set_header_into_opt( "Content-Disposition", 'attachment; filename=' + opt['filename'], opt );
+    }
+    var response = this.authenticate(opt);
+    // $this->log ( $response->isOK () ? "Create object[$object] success!" : "Create object[$object] failed! Response: [" . $response->body . "] Logid[" . $response->header ["x-bs-request-id"] . "]", $opt );
     // return $response;
 };
 /**

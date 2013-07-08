@@ -20,5 +20,5 @@ var options = {
 
 var client = new BCS(options);
 console.log(fs.existsSync( './util.js') );
-client.create_object('develop', '/util.js', './util.js') 
+client.create_object_by_content('develop', '/content.js', '我是中国人 你懂不？') 
 // client.list_object('develop', null, 0);

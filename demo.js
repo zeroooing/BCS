@@ -19,6 +19,21 @@ var options = {
 }
 
 var client = new BCS(options);
-console.log(fs.existsSync( './util.js') );
-client.create_object_by_content('develop', '/content.js', '我是中国人 你懂不？') 
+// client.get_object_info('develop', '/util.js', null, function(err, res){
+// 	if (err) {
+// 		console.log(res);
+// 	} else {
+// 		console.log(res);
+// 	}
+
+// });
+
+client.is_object_exist('develop', '/util1.js', null, function(err, res){
+	if (err) {
+		console.log(res);
+	} else {
+		console.log( res ? "Object exist!" : "Object may not exist!");
+	}
+});
+// client.create_object_by_content('develop', '/content.js', '我是中国人 你懂不？') 
 // client.list_object('develop', null, 0);

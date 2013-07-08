@@ -46,6 +46,7 @@ var BCS = function(option) {
  */
 BCS.prototype.authenticate = function(opt) {
     var boundaryKey = Math.random().toString(16); // random string
+    var response = {};
     // console.log(opt);
     // Validate the S3 bucket name, only list_bucket didnot need validate_bucket
     if (! ('/' == opt['object'] && '' == opt['bucket'] && 'GET' == opt['method'] 
@@ -67,8 +68,7 @@ BCS.prototype.authenticate = function(opt) {
         console.log( 'Can format url, please check your param', - 1 );
     }
     opt['url'] = url;
-    console.log( "[method:" + opt['method'] + "][url:" + url + "]", opt );
-    
+    console.log(url);
     //build request
     if (opt['method']) {
         var method = opt['method'];
@@ -85,14 +85,17 @@ BCS.prototype.authenticate = function(opt) {
 
     */
     var req = http.request(options, function(res) {
-        console.log('STATUS: ' + res.statusCode);
-        console.log('HEADERS: ' + JSON.stringify(res.headers));
+        response['status'] = res.statusCode;
+        response['headers'] = JSON.stringify(res.headers);
+        response['body'] = "";
         res.setEncoding('utf8');
         res.on('data', function (chunk) {
             console.log('BODY: ' + chunk);
+            // response['body'] += chunk;
         });
         res.on('end', function () {
-            // console.log('End! ');
+            opt['callback'](false, response);
+            // console.log(response);
         });
     });
     // Merge the HTTP headers
@@ -102,6 +105,7 @@ BCS.prototype.authenticate = function(opt) {
         }
     }
     req.on('error', function(e) {
+      opt['callback'](true, e);
       console.log('problem with request: ' + e.message);
     });
     req.setHeader('Content-Type', 'application/x-www-form-urlencoded');
@@ -437,6 +441,57 @@ BCS.prototype.create_object_by_content = function(bucket, object, content, opt) 
     var response = this.authenticate(opt);
     // $this->log ( $response->isOK () ? "Create object[$object] success!" : "Create object[$object] failed! Response: [" . $response->body . "] Logid[" . $response->header ["x-bs-request-id"] . "]", $opt );
     // return $response;
+};
+/**
+ * 获取文件信息，发送的为HTTP HEAD请求，文件信息都在http response的header中，不会提取文件的内容
+ * @param string $bucket (Required)
+ * @param string $object (Required)
+ * @param array $opt (Optional)
+ * @throws BCS_Exception
+ * @return BCS_ResponseCore
+ */
+BCS.prototype.get_object_info = function(bucket, object, opt, callback) {
+    var opt = opt || {}; 
+    opt['ak'] = this.ak;
+    opt['sk'] = this.sk;
+    opt['bucket'] = bucket;
+    opt['object'] = object;
+    opt['method'] = 'HEAD';
+    opt['callback'] = callback;
+    this.authenticate(opt);
+};
+/**
+ * 判断object是否存在
+ * @param string $bucket (Required)
+ * @param string $object (Required)
+ * @param array $opt (Optional)
+ * @throws BCS_Exception
+ * @return boolean true false
+ */
+BCS.prototype.is_object_exist = function(bucket, object, opt, callback) {
+    var opt = opt || {}; 
+    opt['ak'] = this.ak;
+    opt['sk'] = this.sk;
+    opt['bucket'] = bucket;
+    opt['object'] = object;
+    opt['method'] = 'HEAD';
+    opt['callback'] = callback;
+    this.get_object_info(bucket, object, opt, function(err, res) {
+        if (err) {
+            callback(err, res);
+        } else {
+            isOK(res.status)
+            callback(err, isOK(res.status))
+        }
+    });
+    /*
+    $this->log ( $response->isOK () ? "Object exist!" : "Object may not exist! Response: [" . $response->body . "]", $opt );
+    if ($response->isOK ()) {
+        return true;
+    } else {
+        return false;
+    }
+    */
 };
 /**
  * 生成签名
